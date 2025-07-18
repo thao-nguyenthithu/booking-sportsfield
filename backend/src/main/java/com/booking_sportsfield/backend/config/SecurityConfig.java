@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/owner/**").hasRole("OWNER")
                 .requestMatchers("/api/player/**").hasRole("PLAYER")
                 .requestMatchers("/api/fields/**").permitAll()
+                .requestMatchers("/api/upload/**").permitAll()
                 .requestMatchers("/api/user/bookings/{id}/payment-confirm").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

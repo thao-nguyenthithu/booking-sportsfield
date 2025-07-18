@@ -40,6 +40,11 @@ public class SportsField {
     @Column(name = "price_per_hour", nullable = false)
     private BigDecimal pricePerHour;
     
+    @NotNull
+    @Positive
+    @Column(name = "number_of_field", nullable = false)
+    private int numberOfField;
+    
     @Column(name = "open_time", nullable = false)
     private LocalTime openTime;
     
@@ -48,6 +53,9 @@ public class SportsField {
     
     @Column(columnDefinition = "TEXT")
     private String details;
+
+    @Column(columnDefinition = "TEXT")
+    private String images; 
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

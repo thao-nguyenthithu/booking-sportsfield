@@ -19,8 +19,10 @@ CREATE TABLE IF NOT EXISTS authentication_code (
     INDEX idx_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Thêm cột owner_id vào bảng sports_fields (nếu chưa có)
+
+ALTER TABLE sports_fields ADD COLUMN IF NOT EXISTS images TEXT;
 ALTER TABLE sports_fields ADD COLUMN IF NOT EXISTS owner_id BIGINT;
+ALTER TABLE sports_fields ADD COLUMN IF NOT EXISTS number_of_field INT NOT NULL DEFAULT 1;
 ALTER TABLE sports_fields ADD CONSTRAINT fk_owner FOREIGN KEY (owner_id) REFERENCES users(id);
 
 -- Tạo bảng maintenance nếu chưa có

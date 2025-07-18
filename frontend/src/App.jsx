@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -16,19 +16,25 @@ import BookingHistory from './components/booking/BookingHistory';
 import AdminDashboard from './components/admin/AdminDashboard';
 import Navigation from './components/common/Navigation';
 import ProtectedRoute from './components/common/ProtectedRoute';
-import OwnerAuth from './pages/OwnerAuth';
-import OwnerDashboard from './components/dashboard/OwnerDashboard';
+import OwnerAuth from './pages/owner/OwnerAuth';
+import OwnerFieldManagement from './pages/owner/OwnerFieldManagement';
+import OwnerBookingManagement from './pages/owner/OwnerBookingManagement';
+import OwnerUserManagement from './pages/owner/OwnerUserManagement';
+import OwnerReportManagement from './pages/owner/OwnerReportManagement';
+import OwnerPaymentManagement from './pages/owner/OwnerPaymentManagement';
+import OwnerDashboard from './pages/owner/OwnerDashboard';
+import OwnerLayout from './pages/owner/OwnerLayout';
 
-// Add placeholder components for player and owner dashboards if not present
 const PlayerHome = () => <div className="p-8 text-2xl text-center">Chào mừng Người chơi!</div>;
 
 function App() {
+  const location = useLocation();
+  const isOwnerRoute = location.pathname.startsWith('/owner/');
   return (
-    <Router>
-      <div className="App">
-        <Navigation />
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Routes>
+    <div className="App">
+      {!isOwnerRoute && <Navigation />}
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Routes>
             {/* Home Page as default */}
             <Route path="/" element={<HomePage />} />
             {/* Public Routes */}
@@ -54,7 +60,14 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/player/home" element={<ProtectedRoute role="PLAYER"><PlayerHome /></ProtectedRoute>} />
-            <Route path="/owner/dashboard" element={<ProtectedRoute role="OWNER"><OwnerDashboard /></ProtectedRoute>} />
+            <Route path="/owner" element={<ProtectedRoute role="OWNER"><OwnerLayout /></ProtectedRoute>}>
+              <Route path="dashboard" element={<OwnerDashboard />} />
+              <Route path="fields" element={<OwnerFieldManagement />} />
+              <Route path="bookings" element={<OwnerBookingManagement />} />
+              <Route path="users" element={<OwnerUserManagement />} />
+              <Route path="reports" element={<OwnerReportManagement />} />
+              <Route path="payments" element={<OwnerPaymentManagement />} />
+            </Route>
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
@@ -77,7 +90,6 @@ function App() {
           pauseOnHover
         />
       </div>
-    </Router>
   );
 }
 

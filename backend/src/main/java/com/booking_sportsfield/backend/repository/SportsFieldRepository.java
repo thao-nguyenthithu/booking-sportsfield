@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface SportsFieldRepository extends JpaRepository<SportsField, Long> {
     List<SportsField> findByOwner_Id(Long ownerId);
+    java.util.Optional<SportsField> findByIdAndOwner_Id(Long id, Long ownerId);
 } 
