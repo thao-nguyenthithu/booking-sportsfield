@@ -36,4 +36,24 @@ public class OwnerAuthController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
+        try {
+            String email = request.get("email");
+            String password = request.get("password");
+            
+            if (email == null || password == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Email và mật khẩu không được để trống"));
+            }
+            
+            String token = ownerService.login(email, password);
+            return ResponseEntity.ok(Map.of(
+                "message", "Đăng nhập thành công!",
+                "token", token
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 } 

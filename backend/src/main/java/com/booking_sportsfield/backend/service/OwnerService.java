@@ -5,7 +5,10 @@ import com.booking_sportsfield.backend.entity.Owner;
 import com.booking_sportsfield.backend.entity.AuthenticationCode;
 import com.booking_sportsfield.backend.repository.OwnerRepository;
 import com.booking_sportsfield.backend.repository.AuthenticationCodeRepository;
+import com.booking_sportsfield.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +23,8 @@ public class OwnerService {
     private final AuthenticationCodeRepository authCodeRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
 
     @Transactional
     public void register(OwnerRegisterRequest request) {
@@ -68,6 +73,24 @@ public class OwnerService {
             .orElseThrow(() -> new RuntimeException("Không tìm thấy chủ sân"));
         owner.setEnabled(true);
         ownerRepository.save(owner);
+    }
+
+    public String login(String email, String password) {
+        // Authenticate owner
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(email, password)
+        );
+
+        // Get owner details
+        Owner owner = ownerRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Email hoặc mật khẩu không đúng"));
+
+        if (!owner.isEnabled()) {
+            throw new RuntimeException("Tài khoản chưa được kích hoạt. Vui lòng xác thực email.");
+        }
+
+        // Generate JWT token
+        return jwtService.generateToken(owner);
     }
 
     private String generateOTP() {

@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 
 @RestController
 @RequestMapping("/api/upload")
+@CrossOrigin(origins = "*")
 public class FileUploadController {
     @PostMapping("/image")
     public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {

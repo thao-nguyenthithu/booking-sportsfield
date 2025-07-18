@@ -1,12 +1,27 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function OwnerAuth() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  
+  // State for form mode (register/login)
+  const [mode, setMode] = useState("register"); // "register" or "login"
+  
   // State cho form đăng ký
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [errors, setErrors] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [submitted, setSubmitted] = useState(false);
   const [agree, setAgree] = useState(false);
   const [agreeError, setAgreeError] = useState("");
+  
+  // State cho form đăng nhập
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [loginErrors, setLoginErrors] = useState({ email: "", password: "" });
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  
   // OTP flow
   const [otpStep, setOtpStep] = useState(false);
   const [otp, setOtp] = useState("");
@@ -49,7 +64,13 @@ export default function OwnerAuth() {
     }
   };
 
-  // Gửi OTP về email qua API /api/auth/register
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginForm({ ...loginForm, [name]: value });
+    setLoginErrors({ ...loginErrors, [name]: validate(name, value) });
+  };
+
+  // Gửi OTP về email qua API /api/owner/register
   const sendOtp = async () => {
     setSendingOtp(true);
     setOtpMsg("");
@@ -59,10 +80,9 @@ export default function OwnerAuth() {
         email: form.email,
         fullName: form.name,
         password: form.password,
-        confirmPassword: form.confirmPassword,
-        role: "OWNER"
+        confirmPassword: form.confirmPassword
       };
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/owner/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -119,7 +139,7 @@ export default function OwnerAuth() {
     setOtpMsg("");
     try {
       // Gọi API xác thực OTP
-      const res = await fetch("/api/auth/verify-otp", {
+      const res = await fetch("/api/owner/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: form.email, otpCode: otp })
@@ -135,6 +155,52 @@ export default function OwnerAuth() {
       setOtpError("Có lỗi xảy ra khi xác thực OTP. Vui lòng thử lại.");
     }
     setVerifyingOtp(false);
+  };
+
+  // Handle login
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    
+    const newErrors = {
+      email: validate("email", loginForm.email),
+      password: validate("password", loginForm.password),
+    };
+    setLoginErrors(newErrors);
+    
+    if (Object.values(newErrors).every((v) => !v)) {
+      try {
+        console.log('Attempting owner login with:', loginForm.email); // Debug log
+        
+        const res = await fetch("/api/owner/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(loginForm)
+        });
+        const data = await res.json();
+        
+        console.log('Login response:', data); // Debug log
+        
+        if (res.ok) {
+          // Login successful
+          console.log('Login successful, setting auth data...'); // Debug log
+          await login(data.token, { 
+            id: null, // Will be set by the backend
+            email: loginForm.email,
+            role: "OWNER"
+          });
+          console.log('Auth data set, navigating...'); // Debug log
+          navigate("/owner/dashboard");
+        } else {
+          setLoginError(data.message || "Đăng nhập thất bại");
+        }
+      } catch (e) {
+        console.error('Login error:', e); // Debug log
+        setLoginError("Có lỗi xảy ra khi đăng nhập");
+      }
+    }
+    setLoginLoading(false);
   };
 
   return (
@@ -156,14 +222,86 @@ export default function OwnerAuth() {
       </div>
       {/* 2 cột bên dưới: Form và Stepper */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-start gap-12">
-        {/* Bảng đăng ký làm chủ sân */}
+        {/* Bảng đăng ký/đăng nhập làm chủ sân */}
         <div className="flex-1 flex justify-center w-full">
           <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 w-full max-w-md border-t-8 border-blue-600 dark:border-blue-400">
-            <h2 className="text-2xl font-extrabold text-center mb-4 text-blue-700 dark:text-blue-300">{otpStep ? 'Chào mừng chủ sân mới!' : 'Đăng ký làm chủ sân'}</h2>
+            {/* Mode Toggle */}
+            <div className="flex mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setMode("register")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                  mode === "register"
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow"
+                    : "text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                Đăng ký
+              </button>
+              <button
+                onClick={() => setMode("login")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                  mode === "login"
+                    ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow"
+                    : "text-gray-600 dark:text-gray-300"
+                }`}
+              >
+                Đăng nhập
+              </button>
+            </div>
+
+            <h2 className="text-2xl font-extrabold text-center mb-4 text-blue-700 dark:text-blue-300">
+              {otpStep ? 'Chào mừng chủ sân mới!' : mode === "register" ? 'Đăng ký làm chủ sân' : 'Đăng nhập chủ sân'}
+            </h2>
+            
             {/* Ẩn mô tả phụ khi ở bước OTP */}
-            {!otpStep && (
+            {!otpStep && mode === "register" && (
               <p className="text-gray-600 dark:text-gray-300 text-center mb-6">Nhận tư vấn và hợp tác vận hành sân thể thao cùng chúng tôi!</p>
             )}
+
+            {/* Login Form */}
+            {mode === "login" && !otpStep && (
+              <form className="space-y-5" onSubmit={handleLogin} noValidate>
+                {loginError && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+                    {loginError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={loginForm.email}
+                    onChange={handleLoginChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${loginErrors.email ? 'border-red-500 focus:ring-red-400' : 'focus:ring-blue-400'}`}
+                    placeholder="Nhập email của bạn"
+                  />
+                  {loginErrors.email && <p className="text-red-500 text-sm mt-1">{loginErrors.email}</p>}
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-1">Mật khẩu</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={loginForm.password}
+                    onChange={handleLoginChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${loginErrors.password ? 'border-red-500 focus:ring-red-400' : 'focus:ring-blue-400'}`}
+                    placeholder="Nhập mật khẩu"
+                  />
+                  {loginErrors.password && <p className="text-red-500 text-sm mt-1">{loginErrors.password}</p>}
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-blue-600 text-white font-bold rounded-lg shadow hover:bg-blue-700 transition mt-2"
+                  disabled={loginLoading}
+                >
+                  {loginLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                </button>
+              </form>
+            )}
+
             {/* OTP Step */}
             {otpStep ? (
               <form className="space-y-5" onSubmit={handleVerifyOtp} noValidate>
@@ -179,8 +317,14 @@ export default function OwnerAuth() {
                         </svg>
                       </div>
                       <div className="text-green-600 font-bold text-xl mb-2 animate-fade-in-slow">Xác thực thành công!</div>
-                      <div className="text-gray-700 text-base mb-4 animate-fade-in-slow2">Giờ bạn có thể đi tới đăng nhập với tư cách là chủ sân để quảng bá sân của bạn ngay hôm nay.</div>
-                      <a href="/owner-login" className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition animate-fade-in-slow3">Đến trang đăng nhập</a>
+                      <div className="text-gray-700 text-base mb-4 animate-fade-in-slow2">Giờ bạn có thể đăng nhập với tư cách là chủ sân để quảng bá sân của bạn ngay hôm nay.</div>
+                      <button
+                        type="button"
+                        onClick={() => setMode("login")}
+                        className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition animate-fade-in-slow3"
+                      >
+                        Đăng nhập ngay
+                      </button>
                       <div className="mt-4 text-sm text-gray-600 animate-fade-in-slow3">
                         Hoặc quay lại <button type="button" className="font-bold text-orange-500 underline hover:text-orange-600" onClick={() => { setOtpStep(false); setOtp(""); setOtpError(""); setOtpMsg(""); setOtpSuccess(false); setForm({ name: "", email: "", password: "", confirmPassword: "" }); setErrors({ name: "", email: "", password: "", confirmPassword: "" }); setAgree(false); setAgreeError(""); }}>
                           đăng ký làm chủ sân
@@ -231,7 +375,7 @@ export default function OwnerAuth() {
               <div className="text-green-600 text-center font-semibold py-8">
                 Đăng ký thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.
               </div>
-            ) : (
+            ) : mode === "register" ? (
               <form className="space-y-5" onSubmit={handleSubmit} noValidate>
                 <div>
                   <label className="block text-gray-700 font-medium mb-1">Họ và tên</label>
@@ -306,7 +450,7 @@ export default function OwnerAuth() {
                   Đăng ký ngay
                 </button>
               </form>
-            )}
+            ) : null}
           </div>
         </div>
         {/* Cách thức đăng ký làm chủ sân */}

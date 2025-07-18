@@ -34,6 +34,8 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/owner/register", "/api/owner/verify-otp", "/api/owner/login").permitAll()
+                .requestMatchers("/api/owner/fields/**").hasRole("OWNER")
                 .requestMatchers("/api/owner/**").hasRole("OWNER")
                 .requestMatchers("/api/player/**").hasRole("PLAYER")
                 .requestMatchers("/api/fields/**").permitAll()

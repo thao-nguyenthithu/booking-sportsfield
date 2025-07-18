@@ -41,6 +41,8 @@ public class JwtService {
         // Add role to JWT claims if available
         if (userDetails instanceof com.booking_sportsfield.backend.entity.User user) {
             extraClaims.put("role", user.getRole().name());
+        } else if (userDetails instanceof com.booking_sportsfield.backend.entity.Owner owner) {
+            extraClaims.put("role", "OWNER");
         }
         return generateToken(extraClaims, userDetails);
     }

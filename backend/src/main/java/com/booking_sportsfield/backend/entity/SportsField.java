@@ -63,7 +63,7 @@ public class SportsField {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
-    private User owner;
+    private Owner owner;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
